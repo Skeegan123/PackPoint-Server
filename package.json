@@ -7,6 +7,14 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Skeegan123/PackPoint-Server.git"
+  },
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Skeegan123/PackPoint-Server/issues"
+  },
+  "homepage": "https://github.com/Skeegan123/PackPoint-Server#readme"
 }
