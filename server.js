@@ -3,23 +3,74 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const nodemon = require('nodemon');
 const ws = require('ws');
+const db = require('./queries');
+const fs = require('fs');
 
 const app = express();
 
-// app.use(bodyParser.json());
+const Pool = require('pg').Pool;
 
-// app.use(bodyParser.urlencoded({ extended: true }));
-// app.use(cors());
+const pool = new Pool({
+  user: 'postgres',
+  host: 'localhost',
+  database: 'api',
+  password: '***REMOVED***',
+  port: 5432,
+});
+
+app.use(bodyParser.json());
+
+app.use(cors());
+
+pool.connect((err, client, release) => {
+  if (err) {
+      return console.error(
+          'Error acquiring client', err.stack)
+  }
+  client.query('SELECT NOW()', (err, result) => {
+      release()
+      if (err) {
+          return console.error(
+              'Error executing query', err.stack)
+      }
+      console.log("Connected to Database !")
+  })
+})
 
 // Set up a headless websocket server that prints any
 // events that come in.
 const wsServer = new ws.Server({ noServer: true });
 wsServer.on('connection', socket => {
-  socket.on('message', message => {
-    console.log("" + message);
-    socket.send(`Hello, you sent -> ${message}`);
+    socket.on('message', message => {
+      if (("" + message) === 'load') {
+        console.log('Loading posts');
+        pool.query('SELECT * FROM posts ORDER BY postID ASC;', (error, results) => {
+          if (error) {
+            throw error
+          }
+        //   response.status(200).json(results.rows)
+        socket.send(JSON.stringify(results.rows));
+        });
+      } else {
+      // console.log("" + message);
+      let post = JSON.parse(message);
+      let postObject = {
+        userID: 1,
+        coordinates: ( '(' + parseFloat(post.latitude) + ',' + parseFloat(post.longitude) +')' ),
+        description: post.locationDescription,
+        noise: post.noiseLevel,
+        crowd: post.crowdLevel,
+        idreq: post.IDrequired,
+        wifi: post.wifi,
+        amenities: post.amenities,
+        tags: post.tags,
+        title: post.locationName,
+      }
+      db.createPost(JSON.stringify(postObject));
+      socket.send(`Hello, you sent -> ${message}`);
+      }
   });
-  socket.send(`Hi there, I'm a WebSocket server`);
+  // socket.send(`Hi there, I'm a WebSocket server`);
 });
 
 // `server` is a vanilla Node.js HTTP server, so use
